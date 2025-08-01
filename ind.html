@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KMIT Assistant - मित्र</title>
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <!-- Google Font for Devanagari (Noto Serif Devanagari) -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@600;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    /* Full-screen animated gradient background */
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "Roboto", sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2, #667eea);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      overflow: hidden;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Main container */
+    .main-container {
+      position: relative;
+      height: 100%;
+    }
+
+    /* Sidebar styling */
+    .sidebar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 260px;
+      height: 100%;
+      background: rgba(32, 33, 35, 0.5);
+      transition: transform 0.3s ease;
+      transform: translateX(-260px);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      color: #e5e5e5;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-header {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      display: flex;
+      justify-content: flex-end;
+    }
+    .sidebar-close {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+    .sidebar-content::-webkit-scrollbar { width: 8px; }
+    .sidebar-content::-webkit-scrollbar-track { background: transparent; }
+    .sidebar-content::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #4e73df, #3b5bb5);
+      border-radius: 4px;
+    }
+    .sidebar-content { scrollbar-width: thin; scrollbar-color: #4e73df transparent; }
+    .sidebar-section-title {
+      margin: 1rem 0 0.5rem;
+      font-size: 0.85rem;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .chat-history {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .chat-history li { margin-bottom: 0.5rem; }
+    .chat-history a {
+      display: block;
+      padding: 0.5rem 0.75rem;
+      border-radius: 5px;
+      color: #d1d5db;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .chat-history a:hover { background: #343541; color: #fff; }
+    .sidebar-footer {
+      border-top: 1px solid #343541;
+      padding: 1rem;
+      font-size: 0.85rem;
+      text-align: center;
+      color: #666;
+    }
+
+    /* Chatbot Container */
+    .chatbot-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: calc(100% - 2rem);
+      height: calc(100% - 2rem);
+      margin: 1rem;
+      padding: 1rem;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    /* Chat Header */
+    .chat-header {
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .header-top {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .sidebar-toggle {
+      position: absolute;
+      left: 0;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      margin: 0.25rem;
+      cursor: pointer;
+      transition: transform 0.2s;
+      z-index: 9999;
+    }
+    .sidebar-toggle:hover { transform: scale(1.1); }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .chat-header h1 {
+      margin: 0;
+      font-family: "Noto Serif Devanagari", serif;
+      font-weight: 700;
+      font-size: 3rem;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 0 0 10px rgba(0,255,234,0.7),
+                   0 0 20px rgba(0,255,234,0.5),
+                   0 0 30px rgba(0,255,234,0.3);
+    }
+    .header-tagline {
+      color: #ddd;
+      margin-top: 0.25rem;
+      font-size: 0.9rem;
+    }
+
+    /* Chat Window */
+    .chat-window {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      background: transparent;
+      position: relative;
+    }
+    .chat-window::-webkit-scrollbar { width: 8px; }
+    .chat-window::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+    }
+    .chat-window::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #4e73df, #3b5bb5);
+      border-radius: 4px;
+    }
+    .chat-window {
+      scrollbar-width: thin;
+      scrollbar-color: #4e73df rgba(0,0,0,0.2);
+    }
+    .chat-message {
+      margin-bottom: 1rem;
+      display: flex;
+      opacity: 0;
+      animation: slideIn 0.5s forwards;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .bot-msg { justify-content: flex-start; }
+    .bot-msg .message-bubble {
+      background: rgba(255,255,255,0.8);
+      color: #333;
+      border-radius: 15px;
+      padding: 0.75rem 1rem;
+      max-width: 75%;
+    }
+    .user-msg { justify-content: flex-end; }
+    .user-msg .message-bubble {
+      background: #4e73df;
+      color: #fff;
+      border-radius: 15px;
+      padding: 0.75rem 1rem;
+      max-width: 75%;
+    }
+
+    /* Chat Input with Inline Autocomplete & Buttons */
+    .chat-input {
+      background: rgba(0,0,0,0.3);
+      border-top: 1px solid rgba(255,255,255,0.2);
+      display: flex;
+      padding: 1rem;
+      margin-top: 0.5rem;
+    }
+    .input-container {
+      position: relative;
+      width: 100%;
+    }
+    #userInput {
+      position: relative;
+      background: rgba(255,255,255,0.8);
+      z-index: 2;
+      width: 100%;
+      padding: 0.75rem 9rem 0.75rem 1rem;
+      border-radius: 25px;
+      border: none;
+      color: #333;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px;
+      color: gray;
+      font-size: 14px;
+      font-style: italic;
+      margin-left: 10px;
+    }
+    .typing-indicator-text {
+      font-family: "Noto Serif Devanagari", serif;
+      font-weight: 600;
+      font-size: 16px;
+      color: rgba(255,255,255,0.8);
+      margin-left: 12px;
+      text-shadow: 0px 0px 6px rgba(0,0,0,0.3);
+      animation: fadeInOut 1.5s infinite alternate;
+    }
+    @keyframes fadeInOut {
+      0% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    .typing-indicator span {
+      width: 6px;
+      height: 6px;
+      background: black;
+      border-radius: 50%;
+      animation: typingBlink 1.5s infinite;
+    }
+    .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBlink {
+      0%   { opacity: 0.2; transform: scale(1); }
+      50%  { opacity: 1;   transform: scale(1.2); }
+      100% { opacity: 0.2; transform: scale(1); }
+    }
+
+    #voiceBtn {
+      position: absolute;
+      top: 50%;
+      right: 5.5rem;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: #4e73df;
+      cursor: pointer;
+      z-index: 3;
+    }
+    #voiceBtn:active { transform: translateY(-50%) scale(0.95); }
+
+    #sendButton {
+      position: absolute;
+      top: 50%;
+      right: 0.75rem;
+      transform: translateY(-50%);
+      background: #4e73df;
+      color: #fff;
+      border: none;
+      border-radius: 25px;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+      z-index: 3;
+    }
+    #sendButton:hover {
+      background: #3b5bb5;
+      transform: translateY(-50%) scale(1.03);
+    }
+    #sendButton:active {
+      transform: translateY(-50%) scale(0.98);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .action-buttons button {
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .action-buttons button:hover { background: #0056b3; }
+
+    @media (max-width: 576px) {
+      .chatbot-container {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        border-radius: 0;
+        padding: 0.5rem;
+      }
+      .chat-window { padding: 0.5rem; }
+      #userInput {
+        padding: 0.5rem 7rem 0.5rem 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <button class="sidebar-close" id="closeBtn" title="Close Sidebar">&times;</button>
+      </div>
+      <div class="sidebar-content">
+        <div class="sidebar-section-title">Today</div>
+        <ul class="chat-history">
+          <li><a href="#">Conversation A</a></li>
+          <li><a href="#">Conversation B</a></li>
+        </ul>
+        <div class="sidebar-section-title">Yesterday</div>
+        <ul class="chat-history">
+          <li><a href="#">Conversation C</a></li>
+          <li><a href="#">Conversation D</a></li>
+        </ul>
+        <div class="sidebar-section-title">Previous 7 Days</div>
+        <ul class="chat-history">
+          <li><a href="#">Conversation E</a></li>
+          <li><a href="#">Conversation F</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-footer">Powered by मित्र</div>
+    </div>
+
+    <!-- Chatbot Container -->
+    <div id="chatbotContainer" class="chatbot-container">
+      <!-- Chat Header -->
+      <div class="chat-header">
+        <div class="header-top">
+          <button class="sidebar-toggle" id="toggleBtn" title="Toggle Sidebar">&#9776;</button>
+          <div class="header-brand">
+            <h1>मित्र</h1>
+          </div>
+        </div>
+        <div class="header-tagline">Your Digital Friend, Always Here.</div>
+      </div>
+
+      <!-- Chat Window -->
+      <div id="chatWindow" class="chat-window"></div>
+
+      <!-- Chat Input with Inline Autocomplete & Buttons -->
+      <div class="chat-input">
+        <div class="input-container">
+          <input
+            type="text"
+            id="userInput"
+            placeholder="Type your message here..."
+            autocomplete="off"
+          />
+          <button id="voiceBtn">&#127908;</button>
+          <button id="sendButton">Send</button>
+        </div>
+      </div>
+
+      <!-- Action Buttons for additional endpoints -->
+      <div class="action-buttons">
+        <button onclick="startAttendanceFlow()">Attendance</button>
+        <button onclick="fetchTimetableData()">Timetable</button>
+        <button onclick="fetchResultsData()">Results</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Basic references
+    const sidebar = document.getElementById("sidebar");
+    const toggleBtn = document.getElementById("toggleBtn");
+    const closeBtn = document.getElementById("closeBtn");
+    const chatWindow = document.getElementById("chatWindow");
+    const sendButton = document.getElementById("sendButton");
+    const voiceBtn = document.getElementById("voiceBtn");
+    const userInput = document.getElementById("userInput");
+
+    let rawInput = "";
+    let isDeleting = false;
+
+    // We'll use these for the attendance flow
+    let attendanceStep = 0;  // 0 = not in attendance flow, 1 = ask mobile, 2 = ask password
+    let storedMobile = "";
+    let storedPassword = "";
+
+    // ----------------- Sidebar Toggle -----------------
+    toggleBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+    });
+    closeBtn.addEventListener("click", () => {
+      sidebar.classList.remove("open");
+    });
+
+    // ----------------- Chat Message Display -----------------
+    function appendMessage(sender, message, isHTML = false, instant = false) {
+      const msgDiv = document.createElement("div");
+      msgDiv.classList.add("chat-message", sender === "user" ? "user-msg" : "bot-msg");
+      const bubble = document.createElement("div");
+      bubble.classList.add("message-bubble");
+      msgDiv.appendChild(bubble);
+      chatWindow.appendChild(msgDiv);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+
+      if (sender === "user" || instant) {
+        if (isHTML) {
+          bubble.innerHTML = message;
+        } else {
+          bubble.textContent = message;
+        }
+      } else {
+        // Typing effect for bot messages
+        const typingIndicator = document.createElement("div");
+        typingIndicator.classList.add("typing-indicator-text");
+        typingIndicator.textContent = "Mithr is typing...";
+        chatWindow.appendChild(typingIndicator);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        setTimeout(() => {
+          typingIndicator.remove();
+          let i = 0;
+          function typeLetter() {
+            if (i < message.length) {
+              if (isHTML) {
+                bubble.innerHTML = message.slice(0, i + 1);
+              } else {
+                bubble.textContent = message.slice(0, i + 1);
+              }
+              i++;
+              chatWindow.scrollTop = chatWindow.scrollHeight;
+              setTimeout(typeLetter, 20);
+            }
+          }
+          typeLetter();
+        }, 600);
+      }
+    }
+
+    // ----------------- Inline Autocomplete for Last Word -----------------
+    const dictionary = [
+      "Hello","How","are","you","doing","today","Hope","everything","is","great","Have","a","nice","day","Goodbye"
+    ];
+    userInput.addEventListener("keydown", function(e) {
+      if (e.key === "Backspace") {
+        isDeleting = true;
+      } else if (
+        e.key === "ArrowRight" &&
+        userInput.selectionStart !== userInput.selectionEnd
+      ) {
+        userInput.setSelectionRange(userInput.value.length, userInput.value.length);
+        rawInput = userInput.value;
+        e.preventDefault();
+      }
+    });
+    userInput.addEventListener("input", function(e) {
+      if (userInput.value.length < rawInput.length) {
+        rawInput = userInput.value;
+        isDeleting = false;
+        return;
+      }
+      if (isDeleting) {
+        isDeleting = false;
+        rawInput = userInput.value;
+        return;
+      }
+      const caret = userInput.selectionStart;
+      const value = userInput.value;
+      const words = value.substring(0, caret).split(" ");
+      const lastWord = words[words.length - 1];
+      const match = dictionary.find(word => word.toLowerCase().startsWith(lastWord.toLowerCase()));
+      if (match && match.toLowerCase() !== lastWord.toLowerCase()) {
+        words[words.length - 1] = match;
+        const suggestion = words.join(" ");
+        userInput.value = suggestion;
+        const startPos = value.lastIndexOf(lastWord);
+        userInput.setSelectionRange(startPos + lastWord.length, suggestion.length);
+      }
+      rawInput = userInput.value;
+    });
+
+    // ----------------- Send Message Function -----------------
+    async function sendMessage() {
+      const typedValue = userInput.value.trim();
+      if (!typedValue) return;
+
+      // By default, we show the exact typed text as the user message.
+      let userMessageText = typedValue;
+
+      // If we're in step 2 (asking for password), mask it with asterisks in the chat bubble
+      if (attendanceStep === 2) {
+        userMessageText = "*".repeat(typedValue.length);
+      }
+
+      // Append the user's message (possibly masked)
+      appendMessage("user", userMessageText);
+      userInput.value = "";
+      rawInput = "";
+
+      // Check attendance flow
+      if (attendanceStep === 1) {
+        // The user just provided the mobile number
+        storedMobile = typedValue;  // store real text
+        attendanceStep = 2;
+        userInput.type = "password";  // mask future input
+        appendMessage("bot", "Now enter your password:");
+        return;
+      }
+      else if (attendanceStep === 2) {
+        // The user just provided the password
+        storedPassword = typedValue;  // store real text
+        attendanceStep = 0; // reset
+        userInput.type = "text";  // switch back to normal
+
+        // Now fetch attendance
+        fetchAttendanceData(storedMobile, storedPassword);
+        return;
+      }
+
+      // Normal chat flow if not in attendance flow
+      if (typedValue.toLowerCase().includes("joke")) {
+        try {
+          const jokeResponse = await fetch("https://official-joke-api.appspot.com/random_joke");
+          if (!jokeResponse.ok) throw new Error("API error");
+          const joke = await jokeResponse.json();
+          const formattedJoke = `<p><strong>${joke.setup}</strong></p><p><em>${joke.punchline}</em></p>`;
+          appendMessage("bot", formattedJoke, true);
+        } catch (error) {
+          appendMessage("bot", `<p><strong>Why don't scientists trust atoms?</strong></p><p><em>Because they make up everything!</em></p>`, true);
+        }
+        return;
+      }
+
+      // Otherwise, talk to the backend
+      try {
+        const response = await fetch("https://a1cf-2401-4900-33ab-3e01-c9ea-928e-9203-11.ngrok-free.app/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: typedValue }),
+        });
+        const data = await response.json();
+        appendMessage("bot", data.response);
+      } catch (error) {
+        appendMessage("bot", "Sorry, there was an error processing your request.");
+      }
+    }
+
+    sendButton.addEventListener("click", sendMessage);
+    userInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    // ----------------- Voice Input -----------------
+    let recognition;
+    if ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
+      recognition.onresult = function (event) {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        userInput.value = transcript;
+        rawInput = transcript;
+      };
+      recognition.onerror = function (event) {
+        console.error("Speech recognition error", event.error);
+      };
+    } else {
+      console.warn("Speech Recognition API not supported in this browser.");
+    }
+    voiceBtn.addEventListener("click", () => {
+      if (recognition) {
+        recognition.start();
+      }
+    });
+
+    // Show initial bot message
+    window.addEventListener("DOMContentLoaded", () => {
+      appendMessage("bot", "Hello, welcome to KMIT Assistant! How can I help you today?");
+    });
+
+    // ----------------- Attendance Flow -----------------
+    function startAttendanceFlow() {
+      attendanceStep = 1;
+      userInput.type = "text";  // ensure text type for mobile
+      appendMessage("bot", "Please enter your mobile number:");
+    }
+
+    // ----------------- Attendance Helper Functions -----------------
+    function renderProgressBar(value) {
+      if (value == null) value = 0;
+      const percent = Math.round(value * 10) / 10;
+      const isFull = percent >= 99.5;
+      const fillColor = isFull ? "green" : "#4e73df";
+      return `
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div style="
+            position: relative; 
+            width: 100px; 
+            height: 10px; 
+            background-color: #e6e6e6; 
+            border-radius: 5px; 
+            overflow: hidden;
+          ">
+            <div style="
+              height: 100%; 
+              width: ${percent}%; 
+              background-color: ${fillColor}; 
+              transition: width 0.3s;
+            "></div>
+          </div>
+          <span style="
+            font-size: 12px; 
+            color: #333; 
+            min-width: 30px;
+          ">
+            ${percent}%
+          </span>
+        </div>
+      `;
+    }
+
+    function formatAttendance(data) {
+      if (data.error) {
+        return data.error;
+      }
+      let tableHTML = `
+        <div style="overflow-x: auto;">
+          <table style="
+            border-collapse: collapse; 
+            width: 100%; 
+            margin-top: 10px;
+          ">
+            <thead>
+              <tr style="background-color: #f5f5f5;">
+                <th style="padding: 8px; border: 1px solid #ddd;">Subject</th>
+                <th style="padding: 8px; border: 1px solid #ddd;">Theory (%)</th>
+                <th style="padding: 8px; border: 1px solid #ddd;">Practical (%)</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      data.attendance_data.forEach((item) => {
+        tableHTML += `
+              <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">${item.subject}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${renderProgressBar(item.theory)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${renderProgressBar(item.practical)}</td>
+              </tr>
+            `;
+      });
+      tableHTML += `
+            </tbody>
+          </table>
+        </div>
+      `;
+      const output = `
+        <div>
+          <p><strong>Student:</strong> ${data.student_name}</p>
+          <p><strong>Overall Attendance:</strong> ${data.overall_percent}%</p>
+          ${tableHTML}
+        </div>
+      `;
+      return output;
+    }
+
+    async function fetchAttendanceData(mobile, password) {
+      appendMessage("bot", "Fetching attendance data...");
+      try {
+        // Replace with your real endpoint
+        const response = await fetch("https://a1cf-2401-4900-33ab-3e01-c9ea-928e-9203-11.ngrok-free.app/attendance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mobile_number: mobile, password: password }),
+        });
+        const data = await response.json();
+        appendMessage("bot", formatAttendance(data), true, true);
+      } catch (error) {
+        console.error("Error fetching attendance data:", error);
+        appendMessage("bot", "Failed to fetch attendance data.");
+      }
+    }
+
+    // ----------------- Timetable & Results Functions -----------------
+    async function fetchTimetableData() {
+      appendMessage("bot", "Fetching timetable data...");
+      // ...
+    }
+    async function fetchResultsData() {
+      appendMessage("bot", "Fetching results data...");
+      // ...
+    }
+  </script>
+</body>
+</html>
